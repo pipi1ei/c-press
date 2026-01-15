@@ -1,0 +1,25 @@
+{
+  "name": "c-press",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pipi1ei/c-press.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pipi1ei/c-press/issues"
+  },
+  "homepage": "https://github.com/pipi1ei/c-press#readme",
+  "devDependencies": {
+    "vitepress": "2.0.0-alpha.15"
+  }
+}
