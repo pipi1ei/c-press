@@ -20,6 +20,10 @@
   },
   "homepage": "https://github.com/pipi1ei/c-press#readme",
   "devDependencies": {
+    "fast-glob": "^3.3.3",
     "vitepress": "2.0.0-alpha.15"
+  },
+  "dependencies": {
+    "vue": "^3.5.26"
   }
 }
