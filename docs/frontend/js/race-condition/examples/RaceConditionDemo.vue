@@ -2,7 +2,7 @@
 import Situations from './components/common/Situations.vue';
 </script>
 <template>
-  <div class="p-3 rounded border border-solid border-slate-300">
+  <div class="example-container">
     <Situations />
   </div>
 </template>
