@@ -31,11 +31,17 @@ export default defineConfig({
       '/frontend/': [
         {
           text: 'JavaScript',
-          items: [{ text: '竞态问题', link: '/frontend/js/race-condition/index.md' }],
+          items: [
+            { text: '竞态问题', link: '/frontend/js/race-condition/index.md' },
+            { text: '函数式编程', link: '/frontend/js/functional-programming/index.md' },
+          ],
         },
         {
           text: 'Vue',
-          items: [{ text: '响应式原理', link: '/frontend/vue/reactivity/index.md' }],
+          items: [
+            { text: '响应式原理', link: '/frontend/vue/reactivity/index.md' },
+            { text: 'computed和watch实现原理', link: '/frontend/vue/computed/index.md' },
+          ],
         },
       ],
       '/ai/': [{ text: '提示词工程', link: '/ai/basic/prompt' }],
