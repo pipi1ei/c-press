@@ -427,10 +427,11 @@ const Person2 = { name: '张三', age: 20 } as const;
 - 8.infer extends
 
 ```ts twoslash
-type TestString<T extends string[]> = T extends [infer First, ...infer Rest]
-  ? `第一个元素是${First}`
-  : never;
-type Res = TestString<['a', 'b', 'c']>;
+// 会报错
+// type TestString<T extends string[]> = T extends [infer First, ...infer Rest]
+//   ? `第一个元素是${First}`
+//   : never;
+// type Res = TestString<['a', 'b', 'c']>;
 
 type TestString2<T extends string[]> = T extends [infer First, ...infer Rest]
   ? First extends string
@@ -442,6 +443,7 @@ type Res2 = TestString2<['a', 'b', 'c']>;
 type TestString3<T extends string[]> = T extends [infer First extends string, ...infer Rest]
   ? `第一个元素是${First}`
   : never;
+type Res3 = TestString3<['a', 'b', 'c']>;
 
 enum E {
   a = 1,
