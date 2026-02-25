@@ -1,3 +1,4 @@
+import { transformerTwoslash } from '@shikijs/vitepress-twoslash';
 import { defineConfig } from 'vitepress';
 import UnoCSS from 'unocss/vite';
 
@@ -21,6 +22,7 @@ export default defineConfig({
         text: '前端',
         items: [
           { text: 'JavaScript', link: '/frontend/js/race-condition' },
+          { text: 'TypeScript', link: '/frontend/ts/type-programming' },
           { text: 'Vue', link: '/frontend/vue/reactivity' },
         ],
         activeMatch: '/frontend/',
@@ -35,6 +37,10 @@ export default defineConfig({
             { text: '竞态问题', link: '/frontend/js/race-condition/index.md' },
             { text: '函数式编程', link: '/frontend/js/functional-programming/index.md' },
           ],
+        },
+        {
+          text: 'TypeScript',
+          items: [{ text: 'TS类型编程', link: '/frontend/ts/type-programming/index.md' }],
         },
         {
           text: 'Vue',
@@ -60,6 +66,8 @@ export default defineConfig({
     },
   },
   markdown: {
+    codeTransformers: [transformerTwoslash()],
+    languages: ['js', 'jsx', 'ts', 'tsx'],
     theme: {
       light: 'one-light',
       dark: 'one-dark-pro',
