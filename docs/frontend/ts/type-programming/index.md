@@ -417,7 +417,7 @@ type Res9 = AllCombination<'A' | 'B' | 'C'>;
 
 TypeScript 类型系统中有些类型比较特殊，比如 `any`、`never`和联合类型等。一些类型的判断要根据它的特性来，我们分别看一下这些特性：
 
-- `IsAny`: any 类型与任何类型的交叉都是 any
+### `IsAny`: any 类型与任何类型的交叉都是 any
 
 ```ts twoslash
 type IsAny<T> = 'a' extends 'b' & T ? true : false;
@@ -426,7 +426,7 @@ type Res2 = IsAny<string>;
 type Res3 = IsAny<{}>;
 ```
 
-- `IsNever`: never 作为类型参数在条件类型左边时会直接返回 never
+### `IsNever`: never 作为类型参数在条件类型左边时会直接返回 never
 
 ```ts twoslash
 type TestNever<T> = T extends never ? true : false;
@@ -440,7 +440,7 @@ type Res2 = IsNever<'a'>;
 type Res3 = IsNever<never>;
 ```
 
-- `IsTuple`: 元组类型的 length 是数字字面量，而数组的 length 是 number。
+### `IsTuple`: 元组类型的 length 是数字字面量，而数组的 length 是 number。
 
 ```ts twoslash
 type Len1 = [1, 2, 3]['length'];
@@ -456,7 +456,7 @@ type Res2 = IsTuple<string[]>;
 type Res3 = IsTuple<'a'>;
 ```
 
-- `UnionToIntersection`: 联合类型转交叉类型
+### `UnionToIntersection`: 联合类型转交叉类型
 
 类型之间是有父子关系的，更具体的那个是子类型，比如 `A` 和 `B` 的交叉类型 `A & B` 就是联合类型 `A | B` 的子类型
 
@@ -479,7 +479,7 @@ type Res = UnionToIntersection<A>;
 
 类型参数 U 是要转换的联合类型。`U extends U` 是为了触发联合类型的分布式条件类型的性质，让每个类型单独传入做计算，最后合并。利用 `U` 做为参数构造函数 `(x: U) => unknown`，通过模式匹配取参数的类型 `(x: infer R) => unknown`，函数的参数是联合类型，而他们的交叉类型是联合类型的子类型，利用函数参数的逆变性质，结果就是交叉类型。
 
-- `GetOptional`: 可选索引的值为 undefined 和值类型的联合类型
+### `GetOptional`: 可选索引的值为 undefined 和值类型的联合类型
 
 ```ts twoslash
 type Obj = { name: string; age?: number | undefined };
@@ -492,34 +492,77 @@ type Res = GetOptional<Obj>;
 
 上面例子中的 `{} extends Pick<T, P>` 可以过滤出可选索引
 
-- `as const`: 默认推导出来的不是字面量类型，加上 as const 可以推导出字面量类型，但带有 readonly 修饰
+### `as const`: 默认推导出来的不是字面量类型，加上 as const 可以推导出字面量类型，但带有 readonly 修饰
 
 ```ts twoslash
 const Person1 = { name: '张三', age: 20 };
 const Person2 = { name: '张三', age: 20 } as const;
 ```
 
-- `infer extends`
+### `infer extends`
+
+我们知道 `infer` 可以通过模式匹配来提取类型中的一部分，比如提取元组最后一个元素的类型
 
 ```ts twoslash
-// 会报错
-// type TestString<T extends string[]> = T extends [infer First, ...infer Rest]
-//   ? `第一个元素是${First}`
-//   : never;
-// type Res = TestString<['a', 'b', 'c']>;
+type Last<T extends unknown[]> = T extends [...infer Rest, infer Ele] ? Ele : never;
 
-type TestString2<T extends string[]> = T extends [infer First, ...infer Rest]
-  ? First extends string
-    ? `第一个元素是${First}`
-    : never
-  : never;
-type Res2 = TestString2<['a', 'b', 'c']>;
+type Res = Last<[1, 2, 3]>;
+```
 
-type TestString3<T extends string[]> = T extends [infer First extends string, ...infer Rest]
-  ? `第一个元素是${First}`
-  : never;
-type Res3 = TestString3<['a', 'b', 'c']>;
+再比如提取函数的返回值类型：
 
+```ts twoslash
+type ReturnType<F extends Function> = F extends (...args: unknown[]) => infer R ? R : never;
+type Res = ReturnType<() => string>;
+```
+
+infer 的模式匹配用法还是挺好理解的，但是 infer 又一个问题，看下面的例子：
+
+```ts
+type TestLast<T extends string[]> = 
+  T extends [...infer Rest, infer Last] ? `最后一个元素是：${Last}` : never;
+```
+
+可以发现，编辑器报错了:
+
+![compile error](./images/1.png)
+
+为什么会报错呢，虽然限制了 `T extends string[]`, 但在 `infer Last` 这个推断过程中，TypeScript 默认将 `Last` 推断为一个泛型类型参数，被视为 `unknown` 类型，所以 `Last` 和 `string` 类型不兼容，导致报错。
+
+解决方法也很简单，我们可以再加一层条件类型判断：
+
+```ts twoslash
+
+type TestLast<T extends string[]> = 
+  T extends [...infer Rest, infer Last] 
+    ? Last extends string 
+      ? `最后一个元素是：${Last}` 
+      : never
+    : never;
+type Res = TestLast<['a', 'b', 'c']>;
+```
+
+但这样也太麻烦了，我们明明知道这里就是 `string`，却还要再 `xxx extends string` 来转换一次。在 TypeScript 4.7 中，新增了 `infer extends` 的语法，可以简化上面的代码，现在可以这样写：
+
+```ts twoslash
+type TestLast<T extends string[]> = 
+  T extends [...infer Rest, infer Last extends string] 
+    ? `最后一个元素是：${Last}` 
+    : never;
+type Res = TestLast<['a', 'b', 'c']>;
+```
+
+**infer 的时候加上 extends 来约束推导的类型，这样推导出的就不再是 unknown 了，而是约束的类型**
+
+下面我们看几个 `infer extends` 的例子：
+
+```ts twoslash
+// 提取数字字符串中的数字类型
+type ExtractNumber<S extends string> = 
+  S extends `${infer N extends number}` ? N : S;
+type Res = ExtractNumber<'123'>;
+
+// 提取枚举值的类型
 enum E {
   a = 1,
   b = 2,
@@ -527,9 +570,268 @@ enum E {
   d = 'bbb',
 }
 type EValue = `${E}`;
+type Res2 = ExtractNumber<`${E}`>;
+```
 
-type StringToNumber<S> = S extends `${infer V extends number}` ? V : S;
-type EValue2 = StringToNumber<`${E}`>;
+## TypeScript 内置的高级类型
+
+前面我们说了 ts 类型编程的一些技巧，通过这些技巧我们可以自己实现很多类型，但实际上一些常见的类型不需要我们自己写，ts 内置了很多高级类型，下面我们看看 ts 内置的一些高级类型：
+
+### Parameters：获取函数参数类型
+
+```ts twoslash
+type Parameters<T extends (...args: any) => any> = 
+  T extends (...args: infer P) => any ? P : never;
+
+type Res = Parameters<(name: string, age: number) => void>;
+```
+
+### ReturnType：获取函数返回值类型
+
+```ts twoslash
+type ReturnType<T extends (...args: any) => any> = 
+  T extends (...args: any) => infer R ? R : any;
+
+type Res = ReturnType<() => string>;
+```
+
+### ConstructorParameters：获取构造函数参数类型
+
+```ts twoslash
+type ConstructorParameters<T extends abstract new (...args: any) => any> = 
+  T extends abstract new (...args: infer P) => any ? P : never;
+
+type Res = ConstructorParameters<new (name: string, age: number) => void>;
+```
+
+### InstanceType：获取构造函数返回值类型
+
+```ts twoslash
+type InstanceType<T extends abstract new (...args: any) => any> = 
+  T extends abstract new (...args: any) => infer R ? R : any;
+
+interface Person {
+  name: string;
+  age: number;
+}
+type Res = InstanceType<new (name: string, age: number) => Person>;
+```
+
+### ThisParameter：获取函数的 this 参数类型
+
+```ts twoslash
+type ThisParameterType<T> = T extends (this: infer U, ...args: any[]) => any ? U : unknown;
+
+type Res = ThisParameterType<(this: { name: string }, age: number) => void>;
+```
+
+### OmitThisParameter：去除函数的 this 参数类型
+
+```ts twoslash
+type OmitThisParameter<T> = 
+  unknown extends ThisParameterType<T> 
+    ? T 
+    : T extends (...args: infer A) => infer R 
+      ? (...args: A) => R 
+      : T;
+
+type Res = OmitThisParameter<(this: { name: string }, age: number) => void>;
+```
+
+### Partial：将类型中的所有属性变为可选
+
+```ts twoslash
+type Partial<T> = {
+  [P in keyof T]?: T[P];
+};
+
+type Obj = { name: string; age: number };
+type Res = Partial<Obj>;
+```
+
+### Required：将类型中的所有属性变为必选
+
+```ts twoslash
+type Required<T> = {
+  [P in keyof T]-?: T[P];
+};
+
+type Obj = { name?: string; age?: number };
+type Res = Required<Obj>;
+```
+
+### Readonly：将类型中的所有属性变为只读
+
+```ts twoslash
+type Readonly<T> = {
+  readonly [P in keyof T]: T[P];
+};
+
+type Obj = { name: string; age: number };
+type Res = Readonly<Obj>;
+```
+
+### Pick：从类型中取出指定的属性
+
+```ts twoslash
+type Pick<T, K extends keyof T> = {
+  [P in K]: T[P];
+};
+
+type Obj = { name: string; age: number };
+type Res = Pick<Obj, 'name'>;
+```
+
+### Record：创建索引类型
+
+```ts twoslash
+type Record<K extends keyof any, T> = {
+  [P in K]: T;
+};
+
+type Res = Record<'a' | 'b' | 'c', number>;
+```
+
+### Exclude：排除指定的类型
+
+```ts twoslash
+type Exclude<T, U> = T extends U ? never : T;
+
+type Res = Exclude<'a' | 'b' | 'c', 'a'>;
+```
+
+### Extract：提取指定的类型
+
+```ts twoslash
+type Extract<T, U> = T extends U ? T : never;
+
+type Res = Extract<'a' | 'b' | 'c', 'a'>;
+```
+
+### Omit：排除指定的属性
+
+```ts twoslash
+type Omit<T, K extends keyof any> = Pick<T, Exclude<keyof T, K>>;
+
+type Obj = { name: string; age: number };
+type Res = Omit<Obj, 'name'>;
+```
+
+### Awaited：获取 Promise 的返回值类型
+
+```ts twoslash
+type Awaited<T> = 
+  T extends null | undefined 
+    ? T 
+    : T extends object & { then(onfulfilled: infer F, ...args: infer _): any } 
+      ? F extends (value: infer V, ...args: infer _) => any 
+        ? Awaited<V> 
+        : never 
+      : T
+
+type Res = Awaited<Promise<Promise<string>>>;
+```
+
+### NonNullable：排除 null 和 undefined
+
+```ts twoslash
+type NonNullable<T> = T extends null | undefined ? never : T;
+
+type Res = NonNullable<string | number | null | undefined>;
+```
+
+## ParseQueryString
+
+上面我们学习了 typescript 类型编程的技巧，下面我们通过一个综合案例来练习一下：
+
+首先，我们实现一个 js 函数，用于对 url 中的 querystring 进行解析，如果有同名的参数就合并：
+
+```js
+function parseQueryString(querystring) {
+  if (!querystring) return {};
+  const params = {};
+  querystring.split('&').forEach((item) => {
+    const [key, value] = item.split('=');
+    if (params[key]) {
+      if (Array.isArray(params[key])) {
+        params[key].push(value);
+      } else {
+        params[key] = [params[key], value];
+      }
+    } else {
+      params[key] = value;
+    }
+  });
+  return params;
+}
+
+const res = parseQueryString('a=1&b=2&c=3&a=4');
+```
+
+![img](./images/2.png)
+
+如果要给这个函数添加类型，大部分人可能会这么加：
+
+```ts
+function parseQueryString(querystring: string): Record<string, any>{
+  if (!querystring) return {};
+  const params: { [key: string]: string } = {};
+  querystring.split('&').forEach((item) => {
+    const [key, value] = item.split('=');
+    if (params[key]) {
+      if (Array.isArray(params[key])) {
+        params[key].push(value);
+      } else {
+        params[key] = [params[key], value];
+      }
+    } else {
+      params[key] = value;
+    }
+  });
+  return params;
+}
+```
+
+但如果这么写的话，返回的对象就不能提示出有哪些属性，也不能提示出属性的类型，所以我们可以用 typescript 类型编程来实现这个函数，实现思路我们可以按照 js 函数的逻辑来写：
+
+1. 将字符串按照 & 分割。
+2. 将分割后的字符串按照 = 分割。
+3. 解析每对 key 和 value 为对象，并将结果合并。
+4. 多个对象中如果有 key 相同的情况，需要将其值合并成数组。
+
+接下来我们实现 `ParseQueryString` 这个类型：
+
+```ts twoslash
+// 通过模式匹配 `key=value` 提取 key 和 value 并构造成对象
+type ParseParam<S extends string> = 
+  S extends `${infer K}=${infer V}` ? { [P in K]: V } : Record<string, any>;
+
+// 对值进行合并
+type MergeValues<One, Other> = 
+  One extends Other 
+    ? One // 值相同取一个就行
+    : Other extends unknown[] 
+      ? [One, ...Other] // 值不同合并成数组
+      : [One, Other]; // 值不同合并成数组
+
+// 合并对象
+type MergeParams<OneParam extends Record<string, any>, OtherParam extends Record<string, any>> = {
+  [K in keyof OneParam | keyof OtherParam]: // K 为两个对象中所有的key
+    K extends keyof OneParam 
+      ? K extends keyof OtherParam // 说明 K 在两个对象中都有，需要合并其值为数组
+        ? MergeValues<OneParam[K], OtherParam[K]> // K 在存在多个值时进行合并
+        : OneParam[K] // K 只在 OneParam 中
+      : K extends keyof OtherParam 
+        ? OtherParam[K] // K 只在 OtherParam 中
+        : never;
+}
+
+type ParseQueryString<S extends string> = 
+  S extends `${infer Param}&${infer Rest}` // 按 & 分割
+    ? MergeParams<ParseParam<Param>, ParseQueryString<Rest>> // 先将每个 key=value 解析成对象，然后进行合并
+    : ParseParam<S>;
+
+type Res = ParseQueryString<'a=1&b=2&c=3&a=4'>;
 ```
 
 ## 学习资料
