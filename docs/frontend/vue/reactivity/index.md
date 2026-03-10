@@ -206,11 +206,11 @@ setTimeout(() => {
 
 当执行 `state.ok = false;` 后，`document.body.innerHTML` 的值会变为 `no`，此时我们再修改 `state.text` 也不会影响 `document.body.innerHTML` 的内容同时也没必要再执行副作用函数了。但现在 `bucket` 中任然存储着 `state.text` 所关联的副作用函数，所以副作用函数还是会重新执行，这其实是没有必要的。
 
-为了达到上述的目的，我们需要新增一个清除依赖的功能。可以在每次副作用函数执行执行，将当前副作用函数的所有依赖都清除，然后执行副作用函数时重新收集。这样当上面例子中的 `state.ok` 变为 `false` 时，由于不会读取 `state.text` 就不会建立 `state.text` 与副作用之间的联系。
+为了达到上述的目的，我们需要新增一个清除依赖的功能。可以在每次副作用函数执行之前执行，将当前副作用函数的所有依赖都清除，然后执行副作用函数时重新收集。这样当上面例子中的 `state.ok` 变为 `false` 时，由于不会读取 `state.text` 就不会建立 `state.text` 与副作用之间的联系。
 
 目前的实现中我们只是在 `dep` 中存储了 `effect`，所以只能通过 `dep` 来清除其中存储的 `effect`，为了在副作用执行之前能够清除依赖，我们需要在 `effect` 中也存储与其关联的 `dep`，建立一个双向的联系，这样就能够通过 `effect` 得到与其关联的 `dep` 然后通过 `dep` 清除 `effect`
 
-```javascript{3,7,11-18,30}
+```javascript{3,7,11-18,31}
 function effect(fn) {
   const effectFn = () => {
     cleanup(effectFn); // 执行副作用函数前先清理关联的 dep
@@ -322,7 +322,7 @@ effect(() => {
 
 要解决上面的问题，我们可以在 `trigger` 函数执行时加一个守卫条件：**如果 trigger 触发执行的副作用函数与当前正在执行的副作用函数相同，则不触发执行**
 
-```javascript
+```javascript{9}
 function trigger(target, key) {
   const depsMap = bucket.get(target);
   if (!depsMap) return;
@@ -600,6 +600,7 @@ function ref(initialValue) {
     },
   };
 
+  // 标识 ref
   Object.defineProperty(wrapper, REF_FLAG, {
     value: true,
   });

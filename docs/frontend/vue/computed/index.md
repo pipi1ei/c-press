@@ -19,8 +19,8 @@ import { ref, computed } from 'vue';
 const firstName = ref('hello');
 const lastName = ref('vue');
 
-const fullName1 = computed(() => `${firstName.value} ${lastName.value}`);
-console.log(fullName1.value);
+const fullName = computed(() => `${firstName.value} ${lastName.value}`);
+console.log(fullName.value);
 </script>
 ```
 
@@ -93,7 +93,7 @@ function computed(getter) {
     get value() {
       if (dirty) {
         _value = effectFn();
-        // 设置为 false，这样后续在依赖的响应式数据不变的情况下就不需要再执行副作用函数，之间返回 _value 即可
+        // 设置为 false，这样后续在依赖的响应式数据不变的情况下就不需要再执行副作用函数，直接返回 _value 即可
         dirty = false;
       }
       return _value;
@@ -263,7 +263,7 @@ function traverse(value, seen = new Set()) {
 }
 ```
 
-可以看到，在 `watch` 内部的 `effect` 中调用 `traverse` 进行递归地读取操作，然后通过 `scheduler` 配置项，在响应式数据变化时执行 `cb` 函数。
+可以看到，在 `watch` 内部的 `effect` 中调用 `traverse` 进行递归地读取操作，这样就能够让对象的每个属性(包括深层对象的属性)都和 `effect` 建立响应式联系，然后通过 `scheduler` 配置项，在响应式数据变化时执行 `cb` 函数。
 
 除了执行回调函数之外，我们在 vue 中使用 `watch` 函数时，还能够在回调函数中得到变化前后的值：
 
@@ -346,7 +346,7 @@ function watch(source, cb, options = {}) {
 
 ### 过期的副作用
 
-过期的副作用和竞态问题有关，关于竞态问题，可以查看这篇博客：[竞态问题](/frontend/js/race-condition/)
+过期的副作用和竞态问题有关，关于竞态问题，可以查看之前的文章：[竞态问题](/frontend/js/race-condition/)
 
 举个例子：
 
@@ -359,9 +359,9 @@ watch(tab, async () => {
 });
 ```
 
-当 tab 多次切换时，会发起多次请求，finalData 的值会是最后返回的请求的数据，但最后返回的并不一定是最后发起的请求，这里就可能会出现问题了。
+当 `tab` 多次切换时，会发起多次请求，finalData 的值会是最后返回的请求的数据，但最后返回数据的请求并不一定是最后发起的请求，这里就可能会出现问题了。
 
-解决方案就是忽略不是最后一次的请求结果，在 vue 中，`watch` 回调函数接受第三个参数 `onCleanup`，我们可以使用 `onCleanup` 注册一个回调，这个回调函数会在当前副作用函数过期时执行：
+解决方案就是忽略不是最后一次发起的请求结果，在 vue 中，`watch` 回调函数接受第三个参数 `onCleanup`，我们可以使用 `onCleanup` 注册一个回调，这个回调函数会在当前副作用函数过期时执行：
 
 ```js
 let finalData;
