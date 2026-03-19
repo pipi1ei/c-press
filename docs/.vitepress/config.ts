@@ -47,6 +47,7 @@ export default defineConfig({
           items: [
             { text: '响应式原理', link: '/frontend/vue/reactivity/index.md' },
             { text: 'computed和watch实现原理', link: '/frontend/vue/computed/index.md' },
+            { text: 'vue通用组件库', link: '/frontend/vue/vue-uni-comp/index.md' },
           ],
         },
       ],
