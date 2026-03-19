@@ -7,10 +7,8 @@ hero:
   text: '由VitePress驱动的个人博客站点'
   actions:
     - theme: brand
-      text: Blog
+      text: Start
       link: /frontend/js/race-condition
-    - theme: alt
-      text: About Me
   image:
     src: /vitepress-logo-large.svg
     alt: VitePress
